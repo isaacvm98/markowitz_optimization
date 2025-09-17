@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
 
@@ -122,3 +124,97 @@ class Portfolio:
         plt.legend()
         plt.grid(True, alpha=0.3)
         plt.show()
+    
+    def market_cap_weights(self, market_caps):
+        """Market cap weighted portfolio (efficient market benchmark)."""
+        return market_caps
+    
+    def equal_weight(self):
+        """Equal weight portfolio."""
+        n = len(self.assets)
+        return {asset: 1/n for asset in self.assets}
+    
+    def plot_weights(self, weights, title="Portfolio Weights", save=True):
+        """Plot portfolio weights as pie chart."""
+        # Filter out zero weights
+        filtered_weights = {k: v for k, v in weights.items() if v > 0.01}
+        
+        if not filtered_weights:
+            print("No significant weights to plot")
+            return
+        
+        assets = list(filtered_weights.keys())
+        values = list(filtered_weights.values())
+        
+        plt.figure(figsize=(8, 6))
+        plt.pie(values, labels=assets, autopct='%1.1f%%', startangle=90)
+        plt.title(title)
+        plt.axis('equal')
+        
+        if save:
+            filename = f"{title.replace(' ', '_').replace('-', '').lower()}.png"
+            plt.savefig(f'visualizations/{filename}', dpi=150, bbox_inches='tight')
+            print(f"Saved plot: {filename}")
+        else:
+            plt.show()
+        plt.close()
+    
+    def plot_frontier(self, save=True):
+        """Plot efficient frontier."""
+        # Calculate frontier
+        vols, rets = self.efficient_frontier()
+        
+        # Get special portfolios
+        max_sharpe = self.max_sharpe()
+        min_vol = self.min_vol()
+        sharpe_stats = self.stats(max_sharpe)
+        vol_stats = self.stats(min_vol)
+        
+        # Plot
+        plt.figure(figsize=(10, 6))
+        plt.plot(vols, rets, 'b-', linewidth=2, label='Efficient Frontier')
+        plt.plot(sharpe_stats['volatility'], sharpe_stats['return'], 'r*', 
+                markersize=15, label=f'Max Sharpe ({sharpe_stats["sharpe"]:.2f})')
+        plt.plot(vol_stats['volatility'], vol_stats['return'], 'g*', 
+                markersize=15, label='Min Volatility')
+        
+        # Individual assets
+        for i, asset in enumerate(self.assets):
+            vol = np.sqrt(self.cov.iloc[i, i])
+            ret = self.mean.iloc[i]
+            plt.plot(vol, ret, 'ko', alpha=0.7)
+            plt.annotate(asset, (vol, ret), xytext=(5, 5), 
+                        textcoords='offset points', fontsize=9)
+        
+        plt.xlabel('Volatility')
+        plt.ylabel('Expected Return')
+        plt.title('Efficient Frontier')
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+        
+        if save:
+            plt.savefig('visualizations/efficient_frontier.png', dpi=150, bbox_inches='tight')
+            print("Saved plot: efficient_frontier.png")
+        else:
+            plt.show()
+        plt.close()
+    
+    def compare_all(self, market_caps=None):
+        """Compare all strategies."""
+        strategies = {
+            'Equal Weight': self.equal_weight(),
+            'Max Sharpe': self.max_sharpe(),
+            'Min Volatility': self.min_vol()
+        }
+        
+        if market_caps:
+            strategies['Market Cap'] = self.market_cap_weights(market_caps)
+        
+        print(f"{'Strategy':<15} | {'Return':<8} | {'Vol':<8} | {'Sharpe':<6}")
+        print("-" * 50)
+        
+        for name, weights in strategies.items():
+            stats = self.stats(weights)
+            print(f"{name:<15} | {stats['return']:>6.1%} | {stats['volatility']:>6.1%} | {stats['sharpe']:>6.2f}")
+        
+        return strategies

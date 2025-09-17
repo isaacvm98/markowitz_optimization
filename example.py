@@ -1,4 +1,4 @@
-from data_fetch.data_fetcher import get_data, TECH, US
+from data_fetch.data_fetcher import get_data, get_market_caps, TECH, US
 from optimizer import Portfolio
 
 def analyze(name, tickers):
@@ -6,30 +6,32 @@ def analyze(name, tickers):
     
     # Get data
     prices, returns = get_data(tickers)
+    market_caps = get_market_caps(tickers)
     portfolio = Portfolio(returns)
     
-    # Optimize
-    max_sharpe = portfolio.max_sharpe()
-    min_vol = portfolio.min_vol()
+    # Compare all strategies
+    strategies = portfolio.compare_all(market_caps)
     
-    # Stats
-    sharpe_stats = portfolio.stats(max_sharpe)
-    vol_stats = portfolio.stats(min_vol)
+    # Show pie charts for best strategies
+    max_sharpe = strategies['Max Sharpe']
+    market_cap = strategies['Market Cap']
     
-    print(f"Max Sharpe: {sharpe_stats['return']:.1%} return, {sharpe_stats['sharpe']:.2f} Sharpe")
-    print(f"Min Vol:    {vol_stats['return']:.1%} return, {vol_stats['volatility']:.1%} volatility")
+    print(f"\nTop Max Sharpe holdings:")
+    top_holdings = sorted(max_sharpe.items(), key=lambda x: x[1], reverse=True)[:3]
+    for asset, weight in top_holdings:
+        print(f"  {asset}: {weight:.1%}")
     
-    # Top holdings
-    top_sharpe = sorted(max_sharpe.items(), key=lambda x: x[1], reverse=True)[:3]
-    print(f"Top holdings: {', '.join([f'{k} ({v:.1%})' for k, v in top_sharpe])}")
-    
-    return portfolio
+    return portfolio, strategies
 
 if __name__ == "__main__":
-    tech_portfolio = analyze("Tech Stocks", TECH)
-    us_portfolio = analyze("US Stocks", US)
+    tech_portfolio, tech_strategies = analyze("Tech Stocks", TECH)
+    us_portfolio, us_strategies = analyze("US Stocks", US)
     
-    # Plot efficient frontiers
-    print("\nPlotting efficient frontiers...")
+    # Plot pie charts
+    print("\nShowing portfolio allocations...")
+    tech_portfolio.plot_weights(tech_strategies['Max Sharpe'], "Tech - Max Sharpe Portfolio")
+    tech_portfolio.plot_weights(tech_strategies['Market Cap'], "Tech - Market Cap Weights")
+    
+    # Plot efficient frontier
+    print("\nShowing efficient frontier...")
     tech_portfolio.plot_frontier()
-    us_portfolio.plot_frontier()
