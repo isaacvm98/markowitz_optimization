@@ -4,7 +4,9 @@ import pandas as pd
 def get_data(tickers, start='2020-01-01'):
     """Get stock data and returns."""
     data = yf.download(tickers, start=start,auto_adjust=True)['Close']
+    data = data.dropna()  # Drop rows where all data is NaN
     returns = data.pct_change(fill_method=None).dropna()
+
     return data, returns
 
 def get_market_caps(tickers):

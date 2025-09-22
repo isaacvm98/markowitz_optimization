@@ -91,39 +91,6 @@ class Portfolio:
         result = minimize(volatility, guess, bounds=bounds, constraints=constraints)
         return dict(zip(self.assets, result.x)) if result.success else None
     
-    def plot_frontier(self):
-        """Plot efficient frontier."""
-        # Calculate frontier
-        vols, rets = self.efficient_frontier()
-        
-        # Get special portfolios
-        max_sharpe = self.max_sharpe()
-        min_vol = self.min_vol()
-        sharpe_stats = self.stats(max_sharpe)
-        vol_stats = self.stats(min_vol)
-        
-        # Plot
-        plt.figure(figsize=(10, 6))
-        plt.plot(vols, rets, 'b-', linewidth=2, label='Efficient Frontier')
-        plt.plot(sharpe_stats['volatility'], sharpe_stats['return'], 'r*', 
-                markersize=15, label=f'Max Sharpe ({sharpe_stats["sharpe"]:.2f})')
-        plt.plot(vol_stats['volatility'], vol_stats['return'], 'g*', 
-                markersize=15, label='Min Volatility')
-        
-        # Individual assets
-        for i, asset in enumerate(self.assets):
-            vol = np.sqrt(self.cov.iloc[i, i])
-            ret = self.mean.iloc[i]
-            plt.plot(vol, ret, 'ko', alpha=0.7)
-            plt.annotate(asset, (vol, ret), xytext=(5, 5), 
-                        textcoords='offset points', fontsize=9)
-        
-        plt.xlabel('Volatility')
-        plt.ylabel('Expected Return')
-        plt.title('Efficient Frontier')
-        plt.legend()
-        plt.grid(True, alpha=0.3)
-        plt.show()
     
     def market_cap_weights(self, market_caps):
         """Market cap weighted portfolio (efficient market benchmark)."""
@@ -159,7 +126,7 @@ class Portfolio:
             plt.show()
         plt.close()
     
-    def plot_frontier(self, save=True):
+    def plot_frontier(self, save=True,fname=None):
         """Plot efficient frontier."""
         # Calculate frontier
         vols, rets = self.efficient_frontier()
@@ -193,8 +160,10 @@ class Portfolio:
         plt.grid(True, alpha=0.3)
         
         if save:
-            plt.savefig('visualizations/efficient_frontier.png', dpi=150, bbox_inches='tight')
-            print("Saved plot: efficient_frontier.png")
+            if fname is None:
+                fname = 'efficient_frontier.png'
+            plt.savefig(f'visualizations/{fname}', dpi=150, bbox_inches='tight')
+            print(f"Saved plot: {fname}")
         else:
             plt.show()
         plt.close()
