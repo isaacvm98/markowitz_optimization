@@ -3,6 +3,8 @@ import matplotlib
 matplotlib.use('Agg')  # Use non-interactive backend
 import matplotlib.pyplot as plt
 from scipy.optimize import minimize
+import csv
+import os
 
 class Portfolio:
     def __init__(self, returns):
@@ -168,7 +170,7 @@ class Portfolio:
             plt.show()
         plt.close()
     
-    def compare_all(self, market_caps=None):
+    def compare_all(self, market_caps=None, name='portfolio'):
         """Compare all strategies."""
         strategies = {
             'Equal Weight': self.equal_weight(),
@@ -182,8 +184,25 @@ class Portfolio:
         print(f"{'Strategy':<15} | {'Return':<8} | {'Vol':<8} | {'Sharpe':<6}")
         print("-" * 50)
         
-        for name, weights in strategies.items():
+        rows = []
+        for strat_name, weights in strategies.items():
             stats = self.stats(weights)
-            print(f"{name:<15} | {stats['return']:>6.1%} | {stats['volatility']:>6.1%} | {stats['sharpe']:>6.2f}")
+            print(f"{strat_name:<15} | {stats['return']:>6.1%} | {stats['volatility']:>6.1%} | {stats['sharpe']:>6.2f}")
+            row = {
+                'name': name,
+                'strategy': strat_name,
+                'return': stats['return'],
+                'volatility': stats['volatility'],
+                'sharpe': stats['sharpe']
+            }
+            rows.append(row)
+        # Save to CSV
+        os.makedirs('results', exist_ok=True)
+        csv_file = f'results/{name}_stats.csv'
+        with open(csv_file, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=['name', 'strategy', 'return', 'volatility', 'sharpe'])
+            writer.writeheader()
+            writer.writerows(rows)
+        print(f"Saved stats to {csv_file}")
         
         return strategies

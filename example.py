@@ -10,7 +10,7 @@ def analyze(name, tickers):
     portfolio = Portfolio(returns)
     
     # Compare all strategies
-    strategies = portfolio.compare_all(market_caps)
+    strategies = portfolio.compare_all(market_caps,name)
     
     # Show pie charts for best strategies
     max_sharpe = strategies['Max Sharpe']
